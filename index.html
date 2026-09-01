@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Void Tracker - Cloud Database & Mobile App</title>
+    
+    <!-- PWA Meta Tags untuk Mobile/Installable App -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Void Tracker">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/992/992651.png">
+    
+    <!-- Web Manifest Inline untuk PWA -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Void Tracker App","short_name":"VoidTracker","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#0f172a","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/992/992651.png","sizes":"512x512","type":"image/png"}]}'>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- SIMULATOR CHROME BROWSER BAR & INSTALL BUTTON -->
+    <div class="bg-slate-900 border-b border-slate-800 p-2 sm:p-3 sticky top-0 z-50 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            
+            <!-- Window Control & Title -->
+            <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+                <div class="flex items-center gap-1.5">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                    <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-400"></i>
+                    <span>Void Tracker Mobile App</span>
+                </div>
+            </div>
+
+            <!-- Address Bar Chrome & Install PWA Button -->
+            <div class="flex-1 w-full max-w-2xl bg-slate-950 border border-slate-700/80 rounded-full px-4 py-1.5 flex items-center justify-between gap-2 shadow-inner">
+                <div class="flex items-center gap-2 overflow-hidden w-full">
+                    <i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+                    <span id="chrome-url-display" class="text-xs font-mono text-emerald-400 truncate">https://voidtracker.com/edit</span>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span id="sync-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Connecting Cloud...
+                    </span>
+                    <span id="url-mode-badge" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        Mode Edit
+                    </span>
+                </div>
+            </div>
+
+            <!-- Tombol Switch URL & Install App -->
+            <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+                <button id="btn-install-app" onclick="installPWA()" class="hidden px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30">
+                    <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i> Download / Install App
+                </button>
+                <button onclick="navigateTo('edit')" id="btn-url-edit" class="flex-1 md:flex-none px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-lg shadow-blue-600/30">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 1. URL Edit
+                </button>
+                <button onclick="navigateTo('database')" id="btn-url-database" class="flex-1 md:flex-none px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 hover:text-white border border-slate-700">
+                    <i data-lucide="database" class="w-3.5 h-3.5"></i> 2. URL Database
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- DOWNLOAD & GOOGLE DRIVE SYNC CARD SETTINGS -->
+        <div class="mb-6 glass-card rounded-2xl p-4 border-l-4 border-l-emerald-500 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                    <i data-lucide="smartphone" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        Install Aplikasi Void Tracker di HP / PC Anda
+                    </h3>
+                    <p class="text-xs text-slate-400">Gunakan sebagai Aplikasi Mobile tanpa perlu browser. Sinkronisasi Cloud Real-time aktif.</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <button onclick="showInstallGuide()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Cara Install di HP
+                </button>
+                <button onclick="toggleDriveModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20">
+                    <i data-lucide="link" class="w-3.5 h-3.5"></i> Hubungkan Google Drive (Sheet)
+                </button>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- URL 1: INTERFACE EDIT & INPUT DATA (https://voidtracker.com/edit) -->
+        <!-- ================================================================= -->
+        <div id="page-edit" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- FORM INPUT & EDIT -->
+            <div class="lg:col-span-5">
+                <div class="glass-card rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                    <div id="form-accent-bar" class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+                    
+                    <div class="flex items-center justify-between mb-5">
+                        <h2 id="form-header-title" class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-5 h-5 text-blue-400"></i> Form Tambah Void Baru
+                        </h2>
+                        <span id="form-mode-indicator" class="text-xs bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-md font-mono border border-blue-500/30">Mode Input</span>
+                    </div>
+
+                    <form id="void-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                        <input type="hidden" id="edit-id" value="">
+
+                        <!-- Tanggal -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Tanggal Void</label>
+                            <input type="date" id="input-tanggal" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+
+                        <!-- Nama Toko / Branch -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Nama Toko / Branch (10 Cabang)</label>
+                            <select id="input-toko" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                                <option value="" disabled selected>-- Pilih Toko --</option>
+                                <option value="012 sukorame">012 sukorame</option>
+                                <option value="024 lontar">024 lontar</option>
+                                <option value="030 klampis ngasem">030 klampis ngasem</option>
+                                <option value="031 tambakrejo">031 tambakrejo</option>
+                                <option value="033 gunung anyar">033 gunung anyar</option>
+                                <option value="034 menanggal">034 menanggal</option>
+                                <option value="035 putat jaya">035 putat jaya</option>
+                                <option value="036 magersari">036 magersari</option>
+                                <option value="084 kanigaran">084 kanigaran</option>
+                                <option value="085 kebonsari">085 kebonsari</option>
+                            </select>
+                        </div>
+
+                        <!-- Inputer & Kode TRX -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Inputer (Kasir/SPV)</label>
+                                <input type="text" id="input-inputer" required placeholder="Nama Inputer" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Kode Transaksi</label>
+                                <input type="text" id="input-kode" required placeholder="TRX-1090" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <!-- Nominal & Status -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Nominal Void (Rp)</label>
+                                <input type="number" id="input-nominal" min="1" required placeholder="50000" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Status Void</label>
+                                <select id="input-status" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                                    <option value="APPROVED">APPROVED</option>
+                                    <option value="PENDING">PENDING</option>
+                                    <option value="REJECTED">REJECTED</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Alasan / Tipe Void -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Tipe / Alasan Void</label>
+                            <select id="input-alasan" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                                <option value="" disabled selected>-- Pilih Tipe Void --</option>
+                                <option value="CANCELED BY SYSTEM">CANCELED BY SYSTEM</option>
+                                <option value="SALAH METODE PEMBAYARAN">SALAH METODE PEMBAYARAN</option>
+                                <option value="SALAH INPUT SUB TOTAL">SALAH INPUT SUB TOTAL</option>
+                                <option value="SALAH INPUT MENU">SALAH INPUT MENU</option>
+                                <option value="DOUBLE INPUT">DOUBLE INPUT</option>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center gap-2 pt-2">
+                            <button type="submit" id="btn-submit" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Simpan Transaksi
+                            </button>
+                            <button type="button" id="btn-cancel-edit" onclick="resetForm()" class="hidden px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition">
+                                Batal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- DAFTAR TRANSAKSI YANG BISA DI-EDIT/HAPUS -->
+            <div class="lg:col-span-7 space-y-4">
+                <div class="glass-card rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="list-filter" class="w-5 h-5 text-blue-400"></i> Kelola Data Transaksi (Edit & Hapus)
+                            </h2>
+                            <p class="text-xs text-slate-400">Pilih data dari tabel di bawah untuk memperbarui isi transaksi</p>
+                        </div>
+                        <span id="edit-table-count" class="bg-slate-800 text-blue-400 font-mono text-xs px-3 py-1 rounded-full border border-slate-700">0 Items</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="bg-slate-900/90 text-xs text-slate-400 uppercase font-mono">
+                                <tr>
+                                    <th class="p-3">Tgl</th>
+                                    <th class="p-3">Toko</th>
+                                    <th class="p-3">Kode TRX</th>
+                                    <th class="p-3">Nominal</th>
+                                    <th class="p-3 text-center">Aksi Edit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="edit-table-body" class="divide-y divide-slate-800">
+                                <!-- Content Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- =================================================================== -->
+        <!-- URL 2: INTERFACE DATABASE & RANKING (https://voidtracker.com/database) -->
+        <!-- =================================================================== -->
+        <div id="page-database" class="space-y-8 hidden">
+            
+            <!-- SUMMARY STAT CARDS -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-l-red-500">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400">Total Transaksi Void</p>
+                        <h3 id="stat-total-void" class="text-2xl font-bold text-white mt-1">0</h3>
+                    </div>
+                    <div class="p-3 bg-red-500/10 text-red-400 rounded-xl">
+                        <i data-lucide="file-x" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-l-amber-500">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400">Total Nominal Void</p>
+                        <h3 id="stat-total-nominal" class="text-xl font-bold text-amber-400 mt-1">Rp 0</h3>
+                    </div>
+                    <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
+                        <i data-lucide="banknote" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-l-indigo-500">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400">Toko Void Terbanyak</p>
+                        <h3 id="stat-top-toko" class="text-sm font-bold text-white mt-1 truncate max-w-[150px]">-</h3>
+                    </div>
+                    <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl">
+                        <i data-lucide="store" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-l-emerald-500">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400">Alasan Paling Banyak</p>
+                        <h3 id="stat-top-alasan" class="text-xs font-bold text-white mt-1 truncate max-w-[150px]">-</h3>
+                    </div>
+                    <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                        <i data-lucide="pie-chart" class="w-6 h-6"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION RANKING GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- 1. RANKING TOKO TERBANYAK HINGGA TERSEDIKIT -->
+                <div class="glass-card rounded-2xl p-6 shadow-xl relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i> Ranking Toko (Terbanyak &rarr; Tersedikit)
+                            </h2>
+                            <p class="text-xs text-slate-400">Peringkat 10 cabang toko berdasarkan frekuensi void</p>
+                        </div>
+                        <span class="text-xs bg-amber-500/10 text-amber-400 font-mono px-2.5 py-1 rounded-full border border-amber-500/20">10 Toko</span>
+                    </div>
+
+                    <div id="ranking-toko-list" class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <!-- 2. RANKING TIPE VOID TERBANYAK HINGGA TERSEDIKIT -->
+                <div class="glass-card rounded-2xl p-6 shadow-xl relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-400"></i> Ranking Tipe / Alasan Void
+                            </h2>
+                            <p class="text-xs text-slate-400">Urutan penyebab terbanyak hingga tersedikit</p>
+                        </div>
+                        <span class="text-xs bg-indigo-500/10 text-indigo-400 font-mono px-2.5 py-1 rounded-full border border-indigo-500/20">5 Tipe</span>
+                    </div>
+
+                    <div id="ranking-alasan-list" class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- VISUALISASI GRAFIK -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-7 glass-card rounded-2xl p-6">
+                    <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+                        <i data-lucide="bar-chart" class="w-4 h-4 text-red-400"></i> Grafik Perbandingan Void antar Toko
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="chartToko"></canvas>
+                    </div>
+                </div>
+                <div class="lg:col-span-5 glass-card rounded-2xl p-6">
+                    <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-400"></i> Proporsi Tipe Void
+                    </h3>
+                    <div class="h-64 flex items-center justify-center">
+                        <canvas id="chartAlasan"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MASTER DATABASE TABLE -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="database" class="w-5 h-5 text-red-400"></i> Master Database Void Toko
+                        </h2>
+                        <p class="text-xs text-slate-400">Menampilkan seluruh data tercatat dari semua cabang</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Search Box -->
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                            <input type="text" id="db-search" oninput="renderMasterDatabaseTable()" placeholder="Cari toko/inputer/kode..." class="bg-slate-900 border border-slate-700 text-xs text-white rounded-xl pl-9 pr-3 py-2 focus:outline-none focus:border-red-500">
+                        </div>
+
+                        <!-- Filter Toko -->
+                        <select id="filter-toko" onchange="renderMasterDatabaseTable()" class="bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2 focus:outline-none focus:border-red-500">
+                            <option value="ALL">Semua 10 Toko</option>
+                            <option value="012 sukorame">012 sukorame</option>
+                            <option value="024 lontar">024 lontar</option>
+                            <option value="030 klampis ngasem">030 klampis ngasem</option>
+                            <option value="031 tambakrejo">031 tambakrejo</option>
+                            <option value="033 gunung anyar">033 gunung anyar</option>
+                            <option value="034 menanggal">034 menanggal</option>
+                            <option value="035 putat jaya">035 putat jaya</option>
+                            <option value="036 magersari">036 magersari</option>
+                            <option value="084 kanigaran">084 kanigaran</option>
+                            <option value="085 kebonsari">085 kebonsari</option>
+                        </select>
+
+                        <!-- Export CSV -->
+                        <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl transition flex items-center gap-1.5">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-900/90 text-xs text-slate-400 uppercase font-mono">
+                            <tr>
+                                <th class="p-3">Tanggal</th>
+                                <th class="p-3">Nama Toko</th>
+                                <th class="p-3">Inputer</th>
+                                <th class="p-3">Kode TRX</th>
+                                <th class="p-3">Nominal (Rp)</th>
+                                <th class="p-3">Alasan Void</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="master-db-table" class="divide-y divide-slate-800">
+                            <!-- Content Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- MODAL PETUNJUK INSTALL APP -->
+    <div id="install-guide-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card max-w-lg w-full rounded-2xl p-6 shadow-2xl relative border border-slate-700">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="smartphone" class="w-5 h-5 text-emerald-400"></i> Panduan Install Aplikasi di HP
+                </h3>
+                <button onclick="hideInstallGuide()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs text-slate-300">
+                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+                    <p class="font-bold text-emerald-400 flex items-center gap-2"><i data-lucide="chrome" class="w-4 h-4"></i> Android (Google Chrome):</p>
+                    <p>1. Buka tautan web ini di Google Chrome HP.</p>
+                    <p>2. Tekan titik tiga <b>(⋮)</b> di kanan atas browser.</p>
+                    <p>3. Pilih <b>"Tambahkan ke Layar Utama"</b> atau <b>"Install Aplikasi"</b>.</p>
+                </div>
+
+                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+                    <p class="font-bold text-blue-400 flex items-center gap-2"><i data-lucide="apple" class="w-4 h-4"></i> iPhone / iPad (Safari):</p>
+                    <p>1. Buka tautan web ini di Safari iOS.</p>
+                    <p>2. Tekan tombol Share <b>(Ikon Bagikan)</b> di bagian bawah layar.</p>
+                    <p>3. Geser ke bawah dan pilih <b>"Tambahkan ke Layar Utama" (Add to Home Screen)</b>.</p>
+                </div>
+
+                <div class="flex items-center justify-end pt-2">
+                    <button onclick="hideInstallGuide()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold">Mengerti</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL INTEGRASI GOOGLE DRIVE (SHEETS WEBHOOK) -->
+    <div id="drive-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card max-w-lg w-full rounded-2xl p-6 shadow-2xl relative border border-slate-700">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="hard-drive" class="w-5 h-5 text-emerald-400"></i> Integrasi Google Drive / Sheets
+                </h3>
+                <button onclick="toggleDriveModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs text-slate-300">
+                <p>Untuk menghubungkan database web ini secara langsung dengan <b>Google Drive</b> Anda agar bisa diakses di Google Sheet:</p>
+                
+                <ol class="list-decimal pl-4 space-y-2 text-slate-400">
+                    <li>Buka Google Drive Anda di <code class="text-emerald-400 font-mono">https://drive.google.com</code></li>
+                    <li>Buat file <b>Google Sheets</b> baru bernama <i>"Void Tracker Database"</i>.</li>
+                    <li>Klik menu <b>Ekstensi &gt; Apps Script</b>, lalu tempel kode Script Web App penerima data.</li>
+                    <li>Klik <b>Terapkan (Deploy) &gt; Terapkan sebagai Web App</b> (Akses: <i>Siapa Saja / Anyone</i>).</li>
+                    <li>Salin URL Web App yang dihasilkan dan tempelkan di bawah ini.</li>
+                </ol>
+
+                <div class="pt-2">
+                    <label class="block font-semibold text-white mb-1">URL Google Apps Script Web App:</label>
+                    <input type="text" id="gdrive-script-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button onclick="toggleDriveModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold">Tutup</button>
+                    <button onclick="saveDriveSettings()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold flex items-center gap-1.5 shadow-lg shadow-emerald-600/30">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Simpan URL Sync
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-900 py-4 text-center text-xs text-slate-500 mt-auto">
+        &copy; 2026 Void Tracker System - Installable PWA Mobile App.
+    </footer>
+
+    <!-- FIREBASE & CORE SCRIPT LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Preset List Toko & Alasan
+        const PRESET_TOKO = [
+            "012 sukorame", "024 lontar", "030 klampis ngasem", "031 tambakrejo",
+            "033 gunung anyar", "034 menanggal", "035 putat jaya", "036 magersari",
+            "084 kanigaran", "085 kebonsari"
+        ];
+
+        const PRESET_ALASAN = [
+            "CANCELED BY SYSTEM", "SALAH METODE PEMBAYARAN", 
+            "SALAH INPUT SUB TOTAL", "SALAH INPUT MENU", "DOUBLE INPUT"
+        ];
+
+        // Setup Firebase Config & Realtime Auth/Cloud DB
+        let db = null;
+        let auth = null;
+        let appId = 'void-tracker-app';
+        let currentUser = null;
+        let voidData = [];
+        let deferredPrompt = null;
+
+        let tokoChartInstance = null;
+        let alasanChartInstance = null;
+        let driveWebhookUrl = localStorage.getItem('gdrive_webhook_url') || '';
+
+        // Initial setup
+        window.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            document.getElementById('input-tanggal').valueAsDate = new Date();
+            
+            if (driveWebhookUrl) {
+                document.getElementById('gdrive-script-url').value = driveWebhookUrl;
+            }
+
+            // PWA Install Event Prompt Listener
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                const installBtn = document.getElementById('btn-install-app');
+                if (installBtn) installBtn.classList.remove('hidden');
+            });
+
+            try {
+                if (typeof __firebase_config !== 'undefined') {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    appId = typeof __app_id !== 'undefined' ? __app_id : 'void-tracker-app';
+
+                    // Authenticate
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
+                    onAuthStateChanged(auth, (u) => {
+                        currentUser = u;
+                        if (u) {
+                            listenToCloudDatabase();
+                        }
+                    });
+                } else {
+                    useFallbackLocalData();
+                }
+            } catch (e) {
+                console.error("Firebase connection error:", e);
+                useFallbackLocalData();
+            }
+
+            window.navigateTo('edit');
+        });
+
+        // Trigger PWA Installation
+        window.installPWA = function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User installed the Void Tracker PWA');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                showInstallGuide();
+            }
+        }
+
+        window.showInstallGuide = function() {
+            document.getElementById('install-guide-modal').classList.remove('hidden');
+        }
+
+        window.hideInstallGuide = function() {
+            document.getElementById('install-guide-modal').classList.add('hidden');
+        }
+
+        // Listen to Real-time Cloud Firestore Data
+        function listenToCloudDatabase() {
+            if (!db || !currentUser) return;
+            const publicCollection = collection(db, 'artifacts', appId, 'public', 'data', 'void_records');
+
+            onSnapshot(publicCollection, (snapshot) => {
+                voidData = snapshot.docs.map(docSnap => ({
+                    docId: docSnap.id,
+                    ...docSnap.data()
+                })).sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+                // Update Sync Status Badge
+                const badge = document.getElementById('sync-status-badge');
+                badge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live Cloud Connected`;
+
+                if (window.currentRoute === 'edit') {
+                    renderEditTable();
+                } else {
+                    renderAnalyticsAndRankings();
+                    renderMasterDatabaseTable();
+                }
+            }, (err) => {
+                console.error("Firestore Listen error:", err);
+                useFallbackLocalData();
+            });
+        }
+
+        function useFallbackLocalData() {
+            const badge = document.getElementById('sync-status-badge');
+            badge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1";
+            badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Local State Mode`;
+
+            const stored = localStorage.getItem('void_tracker_db_v3');
+            voidData = stored ? JSON.parse(stored) : [];
+            if (window.currentRoute === 'edit') renderEditTable();
+            else { renderAnalyticsAndRankings(); renderMasterDatabaseTable(); }
+        }
+
+        function saveLocalFallback() {
+            localStorage.setItem('void_tracker_db_v3', JSON.stringify(voidData));
+        }
+
+        // Currency Formatter
+        window.formatRp = function(value) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+        }
+
+        // SWAP ROUTE CHROME
+        window.navigateTo = function(route) {
+            window.currentRoute = route;
+
+            const urlDisplay = document.getElementById('chrome-url-display');
+            const badge = document.getElementById('url-mode-badge');
+            const btnEdit = document.getElementById('btn-url-edit');
+            const btnDb = document.getElementById('btn-url-database');
+
+            const pageEdit = document.getElementById('page-edit');
+            const pageDatabase = document.getElementById('page-database');
+
+            if (route === 'edit') {
+                urlDisplay.innerText = "https://voidtracker.com/edit";
+                badge.innerText = "Mode Edit & Input";
+                badge.className = "text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0";
+
+                btnEdit.className = "flex-1 md:flex-none px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-lg shadow-blue-600/30";
+                btnDb.className = "flex-1 md:flex-none px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 hover:text-white border border-slate-700";
+
+                pageDatabase.classList.add('hidden');
+                pageEdit.classList.remove('hidden');
+
+                renderEditTable();
+            } else {
+                urlDisplay.innerText = "https://voidtracker.com/database";
+                badge.innerText = "Mode Database & Ranking";
+                badge.className = "text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 shrink-0";
+
+                btnDb.className = "flex-1 md:flex-none px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-red-600 text-white shadow-lg shadow-red-600/30";
+                btnEdit.className = "flex-1 md:flex-none px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 hover:text-white border border-slate-700";
+
+                pageEdit.classList.add('hidden');
+                pageDatabase.classList.remove('hidden');
+
+                renderAnalyticsAndRankings();
+                renderMasterDatabaseTable();
+            }
+
+            lucide.createIcons();
+        }
+
+        // HANDLE FORM SUBMIT (INPUT / EDIT)
+        window.handleFormSubmit = async function(e) {
+            e.preventDefault();
+
+            const docId = document.getElementById('edit-id').value;
+            const tanggal = document.getElementById('input-tanggal').value;
+            const toko = document.getElementById('input-toko').value;
+            const inputer = document.getElementById('input-inputer').value;
+            const kode = document.getElementById('input-kode').value;
+            const nominal = parseFloat(document.getElementById('input-nominal').value) || 0;
+            const alasan = document.getElementById('input-alasan').value;
+            const status = document.getElementById('input-status').value;
+
+            const recordData = {
+                tanggal, toko, inputer, kode, nominal, alasan, status,
+                updatedAt: new Date().toISOString()
+            };
+
+            if (db && currentUser) {
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'void_records');
+                if (docId) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'void_records', docId), recordData);
+                    alert(`✅ Data Void ${kode} berhasil diperbarui di Cloud!`);
+                } else {
+                    await addDoc(colRef, recordData);
+                    alert(`✅ Transaksi Void ${kode} berhasil tersimpan ke Cloud Database!`);
+                }
+            } else {
+                if (docId) {
+                    const idx = voidData.findIndex(d => d.docId === docId);
+                    if (idx !== -1) voidData[idx] = { docId, ...recordData };
+                } else {
+                    voidData.unshift({ docId: 'local_' + Date.now(), ...recordData });
+                }
+                saveLocalFallback();
+                renderEditTable();
+                alert(`✅ Transaksi berhasil disimpan!`);
+            }
+
+            // Optional Webhook Sync to Google Drive / Sheets
+            if (driveWebhookUrl) {
+                try {
+                    fetch(driveWebhookUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(recordData)
+                    });
+                } catch(e) { console.log("GDrive sync attempt finished"); }
+            }
+
+            resetForm();
+        }
+
+        // SET FORM TO EDIT MODE
+        window.startEdit = function(id) {
+            const item = voidData.find(d => d.docId == id);
+            if (!item) return;
+
+            document.getElementById('edit-id').value = item.docId;
+            document.getElementById('input-tanggal').value = item.tanggal;
+            document.getElementById('input-toko').value = item.toko;
+            document.getElementById('input-inputer').value = item.inputer;
+            document.getElementById('input-kode').value = item.kode;
+            document.getElementById('input-nominal').value = item.nominal;
+            document.getElementById('input-alasan').value = item.alasan;
+            document.getElementById('input-status').value = item.status;
+
+            document.getElementById('form-header-title').innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i> Edit Transaksi #${item.kode}`;
+            document.getElementById('form-mode-indicator').innerText = "Mode Edit";
+            document.getElementById('form-mode-indicator').className = "text-xs bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-md font-mono border border-amber-500/30";
+            document.getElementById('form-accent-bar').className = "absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-500 to-red-500";
+            
+            document.getElementById('btn-submit').innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Simpan Perubahan`;
+            document.getElementById('btn-submit').className = "flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2";
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            lucide.createIcons();
+        }
+
+        // RESET FORM BACK TO INPUT MODE
+        window.resetForm = function() {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('input-kode').value = '';
+            document.getElementById('input-nominal').value = '';
+            document.getElementById('input-inputer').value = '';
+            document.getElementById('input-alasan').selectedIndex = 0;
+            document.getElementById('input-toko').selectedIndex = 0;
+
+            document.getElementById('form-header-title').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-blue-400"></i> Form Tambah Void Baru`;
+            document.getElementById('form-mode-indicator').innerText = "Mode Input";
+            document.getElementById('form-mode-indicator').className = "text-xs bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-md font-mono border border-blue-500/30";
+            document.getElementById('form-accent-bar').className = "absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500";
+            
+            document.getElementById('btn-submit').innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> Simpan Transaksi`;
+            document.getElementById('btn-submit').className = "flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2";
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+            
+            lucide.createIcons();
+        }
+
+        // DELETE ITEM
+        window.deleteItem = async function(id) {
+            if (confirm("Apakah Anda yakin ingin menghapus data void transaksi ini dari database cloud?")) {
+                if (db && currentUser) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'void_records', id));
+                } else {
+                    voidData = voidData.filter(item => item.docId != id);
+                    saveLocalFallback();
+                    renderEditTable();
+                }
+            }
+        }
+
+        // RENDER TABLE IN EDIT PAGE (URL EDIT)
+        function renderEditTable() {
+            const tbody = document.getElementById('edit-table-body');
+            document.getElementById('edit-table-count').innerText = `${voidData.length} Total Data`;
+
+            if (voidData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500 text-xs">Belum ada data transaksi void di cloud database.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = voidData.map(item => `
+                <tr class="hover:bg-slate-900/60 transition">
+                    <td class="p-3 text-xs text-slate-400 font-mono">${item.tanggal}</td>
+                    <td class="p-3 font-semibold text-white uppercase text-xs">${item.toko}</td>
+                    <td class="p-3 font-mono text-xs text-amber-400 font-bold">${item.kode}</td>
+                    <td class="p-3 font-medium text-xs text-slate-200">${formatRp(item.nominal)}</td>
+                    <td class="p-3 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="startEdit('${item.docId}')" class="p-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg border border-amber-500/30 transition text-xs flex items-center gap-1">
+                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i> Edit
+                            </button>
+                            <button onclick="deleteItem('${item.docId}')" class="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg border border-red-500/30 transition text-xs flex items-center gap-1">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Hapus
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        // RENDER ANALYTICS & RANKINGS (URL DATABASE)
+        function renderAnalyticsAndRankings() {
+            const totalVoid = voidData.length;
+            const totalNominal = voidData.reduce((acc, curr) => acc + (parseFloat(curr.nominal) || 0), 0);
+
+            document.getElementById('stat-total-void').innerText = totalVoid;
+            document.getElementById('stat-total-nominal').innerText = formatRp(totalNominal);
+
+            // Grouping By Toko
+            const tokoCounts = {};
+            const tokoNominals = {};
+            PRESET_TOKO.forEach(t => { tokoCounts[t] = 0; tokoNominals[t] = 0; });
+
+            voidData.forEach(item => {
+                if (tokoCounts[item.toko] !== undefined) {
+                    tokoCounts[item.toko] += 1;
+                    tokoNominals[item.toko] += parseFloat(item.nominal) || 0;
+                }
+            });
+
+            // Grouping By Alasan
+            const alasanCounts = {};
+            const alasanNominals = {};
+            PRESET_ALASAN.forEach(a => { alasanCounts[a] = 0; alasanNominals[a] = 0; });
+
+            voidData.forEach(item => {
+                if (alasanCounts[item.alasan] !== undefined) {
+                    alasanCounts[item.alasan] += 1;
+                    alasanNominals[item.alasan] += parseFloat(item.nominal) || 0;
+                }
+            });
+
+            // Sorting Toko (High to Low)
+            const sortedToko = Object.keys(tokoCounts).map(toko => ({
+                toko,
+                count: tokoCounts[toko],
+                nominal: tokoNominals[toko]
+            })).sort((a, b) => b.count - a.count || b.nominal - a.nominal);
+
+            // Sorting Alasan (High to Low)
+            const sortedAlasan = Object.keys(alasanCounts).map(alasan => ({
+                alasan,
+                count: alasanCounts[alasan],
+                nominal: alasanNominals[alasan]
+            })).sort((a, b) => b.count - a.count || b.nominal - a.nominal);
+
+            document.getElementById('stat-top-toko').innerText = sortedToko[0]?.count > 0 ? `${sortedToko[0].toko} (${sortedToko[0].count}x)` : '-';
+            document.getElementById('stat-top-alasan').innerText = sortedAlasan[0]?.count > 0 ? `${sortedAlasan[0].alasan} (${sortedAlasan[0].count}x)` : '-';
+
+            // List Ranking Toko
+            const maxTokoCount = sortedToko[0]?.count || 1;
+            document.getElementById('ranking-toko-list').innerHTML = sortedToko.map((item, index) => {
+                const percentage = Math.round((item.count / maxTokoCount) * 100);
+                return `
+                    <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 min-w-[140px]">
+                            <span class="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
+                                index === 0 ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20' :
+                                index === 1 ? 'bg-slate-300 text-slate-950' :
+                                index === 2 ? 'bg-amber-700 text-white' : 'bg-slate-800 text-slate-400'
+                            }">
+                                #${index + 1}
+                            </span>
+                            <div>
+                                <h4 class="text-xs font-semibold text-white uppercase">${item.toko}</h4>
+                                <span class="text-[10px] text-slate-400">${formatRp(item.nominal)}</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 max-w-xs mx-2 hidden sm:block">
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div class="bg-red-500 h-full rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                        <div class="text-right min-w-[60px]">
+                            <span class="text-sm font-bold ${index === 0 && item.count > 0 ? 'text-red-400' : 'text-slate-200'}">${item.count}</span>
+                            <span class="text-[10px] text-slate-400 block">void</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // List Ranking Alasan
+            const maxAlasanCount = sortedAlasan[0]?.count || 1;
+            document.getElementById('ranking-alasan-list').innerHTML = sortedAlasan.map((item, index) => {
+                const percentage = Math.round((item.count / maxAlasanCount) * 100);
+                return `
+                    <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 min-w-[180px]">
+                            <span class="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-bold text-xs">
+                                #${index + 1}
+                            </span>
+                            <div>
+                                <h4 class="text-xs font-semibold text-white uppercase">${item.alasan}</h4>
+                                <span class="text-[10px] text-slate-400">${formatRp(item.nominal)}</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 max-w-xs mx-2 hidden sm:block">
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                        <div class="text-right min-w-[60px]">
+                            <span class="text-sm font-bold text-indigo-300">${item.count}</span>
+                            <span class="text-[10px] text-slate-400 block">kejadian</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            renderCharts(sortedToko, sortedAlasan);
+        }
+
+        // Render Chart.js
+        function renderCharts(sortedToko, sortedAlasan) {
+            const ctxToko = document.getElementById('chartToko').getContext('2d');
+            if (tokoChartInstance) tokoChartInstance.destroy();
+
+            tokoChartInstance = new Chart(ctxToko, {
+                type: 'bar',
+                data: {
+                    labels: sortedToko.map(t => t.toko),
+                    datasets: [{
+                        label: 'Jumlah Void',
+                        data: sortedToko.map(t => t.count),
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: '#ef4444',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+                    }
+                }
+            });
+
+            const ctxAlasan = document.getElementById('chartAlasan').getContext('2d');
+            if (alasanChartInstance) alasanChartInstance.destroy();
+
+            alasanChartInstance = new Chart(ctxAlasan, {
+                type: 'doughnut',
+                data: {
+                    labels: sortedAlasan.map(a => a.alasan),
+                    datasets: [{
+                        data: sortedAlasan.map(a => a.count),
+                        backgroundColor: ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'],
+                        borderWidth: 2,
+                        borderColor: '#0f172a'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 12 } }
+                    }
+                }
+            });
+        }
+
+        // RENDER MASTER DATABASE TABLE (URL DATABASE)
+        window.renderMasterDatabaseTable = function() {
+            const tbody = document.getElementById('master-db-table');
+            const searchVal = document.getElementById('db-search').value.toLowerCase();
+            const filterTokoVal = document.getElementById('filter-toko').value;
+
+            let filtered = voidData.filter(item => {
+                const matchSearch = (item.toko || '').toLowerCase().includes(searchVal) ||
+                                    (item.kode || '').toLowerCase().includes(searchVal) ||
+                                    (item.inputer || '').toLowerCase().includes(searchVal) ||
+                                    (item.alasan || '').toLowerCase().includes(searchVal);
+                
+                const matchToko = filterTokoVal === 'ALL' || item.toko === filterTokoVal;
+                return matchSearch && matchToko;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">Tidak ada data transaksi yang sesuai pencarian.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => `
+                <tr class="hover:bg-slate-900/60 transition">
+                    <td class="p-3 text-xs text-slate-400 font-mono">${item.tanggal}</td>
+                    <td class="p-3 font-semibold text-white uppercase text-xs">${item.toko}</td>
+                    <td class="p-3 text-xs text-slate-300">${item.inputer}</td>
+                    <td class="p-3 font-mono text-xs text-amber-400 font-bold">${item.kode}</td>
+                    <td class="p-3 font-medium text-xs text-white">${formatRp(item.nominal)}</td>
+                    <td class="p-3 text-xs text-slate-300">
+                        <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700 text-[11px]">${item.alasan}</span>
+                    </td>
+                    <td class="p-3 text-xs">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                            item.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                            item.status === 'PENDING' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                            'bg-red-500/20 text-red-400 border border-red-500/30'
+                        }">
+                            ${item.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // EXPORT TO CSV
+        window.exportCSV = function() {
+            if (voidData.length === 0) {
+                alert("Tidak ada data untuk diekspor!");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Tanggal,Nama Toko,Inputer,Kode Transaksi,Nominal,Alasan Void,Status\n";
+
+            voidData.forEach(item => {
+                const row = [
+                    `"${item.tanggal}"`,
+                    `"${item.toko}"`,
+                    `"${item.inputer}"`,
+                    `"${item.kode}"`,
+                    item.nominal,
+                    `"${item.alasan}"`,
+                    `"${item.status}"`
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Master_Database_Void_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // TOGGLE DRIVE MODAL & SAVE SETTINGS
+        window.toggleDriveModal = function() {
+            const modal = document.getElementById('drive-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        window.saveDriveSettings = function() {
+            const url = document.getElementById('gdrive-script-url').value.trim();
+            localStorage.setItem('gdrive_webhook_url', url);
+            driveWebhookUrl = url;
+            alert("✅ Integrasi URL Google Drive/Sheets berhasil disimpan!");
+            toggleDriveModal();
+        }
+    </script>
+</body>
+</html>
